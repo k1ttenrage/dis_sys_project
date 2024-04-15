@@ -1,0 +1,19 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: pet-db-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - type: volume
+        source: MONGO_DATA
+        target: /data/db
+      - type: volume
+        source: MONGO_CONFIG
+        target: /data/configdb
+
+volumes:
+  MONGO_DATA:
+    name: MONGO_DATA
+  MONGO_CONFIG:
+    name: MONGO_CONFIG

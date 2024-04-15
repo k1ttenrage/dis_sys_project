@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>adopt</title>
+</head>
+<body>
+    <header>
+        <a href="/">home</a>
+        <a href="adopt">adopt</a>
+        <a href="articles">articles</a>
+        <a href="help">help</a>
+        <h3>currenrly signed as: {{ value }}<h3></h3>
+    </header>
+    <h1 align="center">account</h1>
+    
+    <!-- Logout button -->
+    <form action="http://127.0.0.1:8001/account" method="post" align="center">
+        <button type="submit">Logout</button>
+    </form>
+</body>
+</html>

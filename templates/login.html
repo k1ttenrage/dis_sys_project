@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>login</title>
+</head>
+<body>
+    <header>
+        <a href="/">home</a>
+        <a href="adopt">adopt</a>
+        <a href="articles">articles</a>
+        <a href="help">help</a>
+    </header>
+    <h1 align="center">login</h1>
+    <form action="http://127.0.0.1:8001/login" method="post" align="center">
+        <!--<label for="cat_url">Cat URL:</label><br>-->
+        <input type="text" id="login" name="login"><br><br>
+        <input type="text" id="password" name="password"><br><br>
+        <input type="text" id="shelter" name="shelter"><br><br>
+        <br><br>
+        <input type="submit" value="Submit">
+    </form>
+
+    <script>
+    </script>
+</body>
+</html>

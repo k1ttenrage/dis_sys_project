@@ -1,0 +1,13 @@
+services:
+    postgres:
+        container_name: user-db-postgres
+        environment:
+            - POSTGRES_DB=user_db
+            - POSTGRES_USER=kittenrage
+            - POSTGRES_PASSWORD=123
+        ports:
+            - '5432:5432'
+        image: 'postgres:latest'
+
+
+

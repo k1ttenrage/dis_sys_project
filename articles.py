@@ -1,0 +1,33 @@
+from flask import Flask, request, abort, jsonify, render_template, make_response, redirect
+import requests
+import uuid
+
+app = Flask(__name__)
+
+@app.route("/", methods=["POST", "GET"])
+def handle_index():
+    return redirect("http://127.0.0.1:8000/", code=302)
+
+@app.route("/login", methods=["POST", "GET"])
+def handle_login():
+    return redirect("http://127.0.0.1:8001/login", code=302)
+
+@app.route("/articles", methods=["POST", "GET"])
+def handle_articles():
+    if request.method == "POST":
+        return render_template('articles.html'), 200
+    elif request.method == "GET":
+        return render_template('articles.html'), 200
+    else:
+        abort(400)
+
+@app.route("/adopt", methods=["POST", "GET"])
+def handle_adopt():
+    return redirect("http://127.0.0.1:8003/adopt", code=302)
+
+@app.route("/help", methods=["POST", "GET"])
+def handle_help():
+    return redirect("http://127.0.0.1:8004/help", code=302)
+
+if __name__ == "__main__":
+    app.run(port=8002)
