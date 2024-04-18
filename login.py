@@ -52,7 +52,6 @@ def handle_login():
     if user_id is not None:
         entry = entry_by_user_id(user_id)
         if entry is not None:
-            cookie = request.cookies.get('cookie')
             if cookie == b64encode(str(entry[0]).encode() + entry[1].encode() + entry[2].encode()).decode(): 
                 return redirect("http://127.0.0.1:8001/account", code=302)
 
@@ -61,14 +60,10 @@ def handle_login():
         password = hashlib.md5(request.form.get('password').encode()).hexdigest()
         shelter = int(request.form.get('shelter')) #add limit to html
 
-        # manual log in
         conn, cur = connect_to_db()
         cur.execute('SELECT * FROM users WHERE login = %s AND password = %s;', (login, password))
         entry = cur.fetchone()
         commit_close(conn, cur)
-        resp = make_response(render_template('account.html', value=login))
-        resp.set_cookie('user_id', str(entry[0]))
-        resp.set_cookie('cookie', b64encode(str(entry[0]).encode() + entry[1].encode() + entry[2].encode()).decode())
 
         if entry is None:
         # create account
@@ -76,9 +71,15 @@ def handle_login():
             conn, cur = connect_to_db()
             cur.execute('INSERT INTO users (user_id, login, password, shelter) VALUES (%s, %s, %s, %s);', (user_id, login, password, shelter))
             commit_close(conn, cur)
-            resp = make_response(render_template('login.html'))
+            resp = make_response(render_template('account.html', value=login))
             resp.set_cookie('user_id', str(user_id))
             resp.set_cookie('cookie', b64encode(str(user_id).encode() + login.encode() + password.encode()).decode())
+        
+        else:
+            # manual log in
+            resp = make_response(render_template('account.html', value=login))
+            resp.set_cookie('user_id', str(entry[0]))
+            resp.set_cookie('cookie', b64encode(str(entry[0]).encode() + entry[1].encode() + entry[2].encode()).decode())
 
         return resp, 200
     
