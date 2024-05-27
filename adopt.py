@@ -18,12 +18,12 @@ def index():
 def fetchrecords():
     if request.method == 'POST':
         query = request.form['action']
-        minimum_price = float(request.form['minimum_price'])
-        maximum_price = float(request.form['maximum_price'])
+        minimum_age = float(request.form['minimum_age'])
+        maximum_age = float(request.form['maximum_age'])
         if query == '':
             productlist = list(cats_collection.find().sort('pid', 1))
         else:
-            productlist = list(cats_collection.find({'age': {'$gte': minimum_price, '$lte': maximum_price}}))
+            productlist = list(cats_collection.find({'age': {'$gte': minimum_age, '$lte': maximum_age}}))
     return jsonify({'htmlresponse': render_template('response.html', productlist=productlist)})
 
 @app.route("/", methods=["POST", "GET"])
