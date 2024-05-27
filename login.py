@@ -58,7 +58,7 @@ def handle_login():
     if request.method == "POST":
         login = request.form.get('login')
         password = hashlib.md5(request.form.get('password').encode()).hexdigest()
-        shelter = int(request.form.get('shelter')) #add limit to html
+        shelter = int(request.form.get('shelter')) #add dropdown list to html
 
         conn, cur = connect_to_db()
         cur.execute('SELECT * FROM users WHERE login = %s AND password = %s;', (login, password))
