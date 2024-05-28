@@ -1,0 +1,8 @@
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: article-db-maria
+    environment:
+      - MARIADB_ROOT_PASSWORD=123
+    ports:
+      - "3306:3306"

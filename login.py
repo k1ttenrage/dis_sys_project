@@ -65,7 +65,13 @@ def handle_login():
         entry = cur.fetchone()
         commit_close(conn, cur)
 
-        if entry is None:
+        if entry:
+            # manual log in
+            resp = make_response(render_template('account.html', value=login))
+            resp.set_cookie('user_id', str(entry[0]))
+            resp.set_cookie('cookie', b64encode(str(entry[0]).encode() + entry[1].encode() + entry[2].encode()).decode())
+        
+        else:
         # create account
             user_id = uuid4()
             conn, cur = connect_to_db()
@@ -74,12 +80,6 @@ def handle_login():
             resp = make_response(render_template('account.html', value=login))
             resp.set_cookie('user_id', str(user_id))
             resp.set_cookie('cookie', b64encode(str(user_id).encode() + login.encode() + password.encode()).decode())
-        
-        else:
-            # manual log in
-            resp = make_response(render_template('account.html', value=login))
-            resp.set_cookie('user_id', str(entry[0]))
-            resp.set_cookie('cookie', b64encode(str(entry[0]).encode() + entry[1].encode() + entry[2].encode()).decode())
 
         return resp, 200
     
