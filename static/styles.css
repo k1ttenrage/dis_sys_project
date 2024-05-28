@@ -42,3 +42,37 @@ h3{
 .select_param{
   width: 100%;
 }
+
+#article_input{
+  width: 50%;
+  margin-left: 25%;
+}
+
+#article_input textarea{
+  width: 100%;
+  margin-top: 2.5%;
+  margin-bottom: 2.5%;
+}
+
+#article_text{
+  height: 40%;
+}
+
+#article_button{
+  margin-left: 30%;
+  width: 40%;
+  padding: 2%;
+  border: 0;
+  background-color: rgb(196, 2, 2);
+  color: white;
+  transition: 0.3s;
+  border-radius: 20px;
+  opacity: 0.6;
+}
+
+#article_button:hover{
+  padding: 3%;
+  width: 50%;
+  margin-left: 25%;
+  opacity: 1
+}

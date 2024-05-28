@@ -58,6 +58,10 @@ def handle_adopt():
 def handle_help():
     return redirect("http://127.0.0.1:8004/help", code=302)
 
+@app.route("/create_article", methods=["POST", "GET"])
+def handle_generator():
+    return redirect("http://127.0.0.1:8010/create_article", code=302)
+
 if __name__ == "__main__":
     app.run(port=8002)
 
