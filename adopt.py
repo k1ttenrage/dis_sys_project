@@ -20,10 +20,15 @@ def fetchrecords():
         query = request.form['action']
         minimum_age = float(request.form['minimum_age'])
         maximum_age = float(request.form['maximum_age'])
+        pet_color = request.form['pet_color']
+        pet_sex = request.form['pet_sex']
         if query == '':
-            productlist = list(cats_collection.find().sort('pid', 1))
+            productlist = list(cats_collection.find())
         else:
-            productlist = list(cats_collection.find({'age': {'$gte': minimum_age, '$lte': maximum_age}}))
+            query = [{"$match": {"age": {"$gte": minimum_age, "$lt": maximum_age}}}]
+            if pet_color != 'all': query[0]['$match']['color'] = pet_color
+            if pet_sex != 'all': query[0]['$match']['sex'] = pet_sex
+            productlist = list(cats_collection.aggregate(query))
     return jsonify({'htmlresponse': render_template('response.html', productlist=productlist)})
 
 @app.route("/", methods=["POST", "GET"])

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>article generator</title>
+</head>
+<body>
+    <header>
+        <a href="/">home</a>
+        <a href="login">login</a>
+        <a href="adopt">adopt</a>
+        <a href="articles">articles</a>
+        <a href="help">help</a>
+        <h3>currenrly signed as: {{ value }}<h3></h3>
+    </header>
+    <h1 align="center">article generator</h1>
+    <form id="article_input" method="POST">
+        <textarea id="article_name" name="article_name" placeholder="here name of your article goes"></textarea><br>
+        <textarea id="article_text" name="article_text" placeholder="here your article goes" rows="10"></textarea><br>
+        <input id="article_button" type="submit" name="article">
+    </form>
+</body>
+</html>
