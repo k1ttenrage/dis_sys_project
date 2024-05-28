@@ -1,9 +1,12 @@
 from flask import Flask, request, abort, jsonify, render_template, make_response, redirect
+from subprocess import run
 import requests
 import uuid
 import mariadb
 
 app = Flask(__name__)
+
+run(['docker-compose', f'-fmaria.yml', 'up', '-d'])
 
 def get_connection():
     try:
@@ -57,3 +60,9 @@ def handle_help():
 
 if __name__ == "__main__":
     app.run(port=8002)
+
+try:
+    while True:
+        pass
+except KeyboardInterrupt:
+    run(['docker-compose', f'-fmaria.yml', 'stop'])

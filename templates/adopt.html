@@ -33,20 +33,21 @@
           </div>
           <div class="list-group">
             <h3>Sex</h3>
-            <select class="select_param">
+            <select class="select_param", id="pet_sex">
+              <option value="all">All</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
-              <option value="all">All</option>
             </select>
           </div>
           <div class="list-group">
             <h3>Color</h3>
-            <select class="select_param">
+            <select class="select_param", id="pet_color">
+              <option value="all">All</option>
               <option value="black">Black</option>
+              <option value="grey">Grey</option>
               <option value="red">Red</option>
               <option value="white">White</option>
               <option value="colorful">Colorful</option>
-              <option value="all">All</option>
             </select>
           </div>
         </div>
@@ -59,7 +60,7 @@
       #loading {
         text-align: center;
         background: url('static/loading.gif') no-repeat center;
-        height: 150px;
+        height: 500px;
       }
     </style>
 <script>
@@ -71,10 +72,12 @@
             var action = 'fetch_data';
             var minimum_age = $('#hidden_minimum_age').val();
             var maximum_age = $('#hidden_maximum_age').val();
+            var pet_color = $('#pet_color').val();
+            var pet_sex = $('#pet_sex').val();
             $.ajax({
                 url:"/fetchrecords",
                 method:"POST",
-                data:{action:action, minimum_age:minimum_age, maximum_age:maximum_age},
+                data:{action:action, minimum_age:minimum_age, maximum_age:maximum_age, pet_color:pet_color, pet_sex:pet_sex},
                 success:function(data){
                     $('.filter_data').html(data);
                     $(".filter_data").append(data.htmlresponse);
