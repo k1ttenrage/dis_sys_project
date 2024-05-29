@@ -1,4 +1,4 @@
-from flask import Flask, request, abort, render_template, make_response, redirect, session, flash
+from flask import Flask, request, abort, render_template, make_response, redirect, session
 from pika import BlockingConnection, ConnectionParameters, BasicProperties
 from subprocess import run
 from datetime import date
@@ -50,9 +50,8 @@ def handle_create_article():
         channel = connection.channel()
         channel.queue_declare(queue='article_approve')
         channel.basic_publish(exchange='', routing_key='article_approve', body=dumps(article), properties=BasicProperties(delivery_mode = 2, ))
-        flash('Стаття відправлена на огляд')
         resp = make_response(render_template('article_generator.html', value=login))
-        return redirect("http://127.0.0.1:8002/articles", code=302)
+        return resp, 200
     elif request.method == "GET":
         resp = make_response(render_template('article_generator.html', value=login))
         return resp, 200
@@ -60,4 +59,10 @@ def handle_create_article():
         abort(400)
 
 if __name__ == "__main__":
-    app.run(port=8010)
+    app.run(port=8012)
+
+try:
+    while True:
+        pass
+except KeyboardInterrupt:
+    run(['docker-compose', f'-frabbitmq.yml', 'stop'])

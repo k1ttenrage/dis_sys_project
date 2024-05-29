@@ -1,6 +1,4 @@
-from flask import Flask, request, abort, jsonify, render_template, make_response, redirect
-import requests
-import uuid
+from flask import Flask, request, abort, render_template, redirect
 
 app = Flask(__name__)
 
