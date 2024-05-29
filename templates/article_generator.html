@@ -15,10 +15,14 @@
         <h3>currenrly signed as: {{ value }}<h3></h3>
     </header>
     <h1 align="center">article generator</h1>
+    {% if value %}
     <form id="article_input" method="POST">
         <textarea id="article_name" name="article_name" placeholder="here name of your article goes"></textarea><br>
         <textarea id="article_text" name="article_text" placeholder="here your article goes" rows="10"></textarea><br>
         <input id="article_button" type="submit" name="article">
     </form>
+    {% else %}
+    <p>currently no signed in. try to log out and log in</p>
+    {% endif %}
 </body>
 </html>

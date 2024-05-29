@@ -1,35 +1,20 @@
-from flask import Flask, request, abort, jsonify, render_template, make_response, redirect
+from flask import Flask, request, abort, render_template, make_response, redirect, session
 from pika import BlockingConnection, ConnectionParameters, BasicProperties
 from subprocess import run
 from datetime import date
-from time import sleep
-import psycopg2
+import redis
 import json
 
 app = Flask(__name__)
 
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'session:'
+app.config['SESSION_REDIS'] = redis.Redis(host='localhost', port=6379)
+
 run(['docker-compose', f'-frabbitmq.yml', 'up', '-d'])
-
-def connect_to_db():
-    while True:
-        try:
-            conn = psycopg2.connect("host=localhost dbname=user_db user=kittenrage password=123")
-            cur = conn.cursor()
-            return conn, cur
-        except psycopg2.OperationalError:
-            sleep(2)
-
-def commit_close(conn, cur):
-    conn.commit() 
-    cur.close()
-    conn.close()
-
-def entry_by_user_id(user_id):
-    conn, cur = connect_to_db()
-    cur.execute('SELECT * FROM users WHERE user_id = %s;', (str(user_id),))
-    entry = cur.fetchone()
-    commit_close(conn, cur)
-    return entry
 
 @app.route("/", methods=["POST", "GET"])
 def handle_index():
@@ -54,7 +39,9 @@ def handle_help():
 @app.route("/create_article", methods=["POST", "GET"])
 def handle_create_article():
     article = {}
-    login = entry_by_user_id(request.cookies.get('user_id'))[1]
+    login = session.get(request.cookies.get('user_id'), 'Не знайдено!')
+    print(login)
+    if login == 'Не знайдено!': login = None
     if request.method == "POST":
         article['article_name'] = request.form['article_name']
         article['article_text'] = request.form['article_text']
@@ -63,8 +50,6 @@ def handle_create_article():
         connection = BlockingConnection(ConnectionParameters(host='localhost'))
         channel = connection.channel()
         channel.queue_declare(queue='article_approve')
-        #channel.basic_publish(exchange='', routing_key='hello', body=article)
-        print(article)
         channel.basic_publish(exchange='', routing_key='article_approve', body=json.dumps(article), properties=BasicProperties(delivery_mode = 2, ))
         resp = make_response(render_template('article_generator.html', value=login))
         return resp, 200

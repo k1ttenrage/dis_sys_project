@@ -1,13 +1,23 @@
-from flask import Flask, request, abort, jsonify, render_template, make_response, redirect
+from flask import Flask, request, abort, render_template, make_response, redirect, session
 from base64 import b64encode
 from subprocess import run
 from uuid import uuid4
 from time import sleep
 import psycopg2.extras
-import requests
 import psycopg2
 import hashlib
+import redis
+
 psycopg2.extras.register_uuid()
+
+app = Flask(__name__)
+
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'session:'
+app.config['SESSION_REDIS'] = redis.Redis(host='localhost', port=6379)
 
 run(['docker-compose', f'-fpostgres.yml', 'up', '-d'])
 
@@ -40,8 +50,6 @@ except psycopg2.errors.DuplicateTable:
     cur.close()
     pass
 
-app = Flask(__name__)
-
 @app.route("/login", methods=["POST", "GET"])
 def handle_login():
 
@@ -49,9 +57,9 @@ def handle_login():
     cookie = request.cookies.get('cookie')
 
     # automatic log in
-    if user_id is not None:
+    if user_id:
         entry = entry_by_user_id(user_id)
-        if entry is not None:
+        if entry:
             if cookie == b64encode(str(entry[0]).encode() + entry[1].encode() + entry[2].encode()).decode(): 
                 return redirect("http://127.0.0.1:8001/account", code=302)
 
@@ -68,18 +76,24 @@ def handle_login():
         if entry:
             # manual log in
             resp = make_response(render_template('account.html', value=login))
-            resp.set_cookie('user_id', str(entry[0]))
-            resp.set_cookie('cookie', b64encode(str(entry[0]).encode() + entry[1].encode() + entry[2].encode()).decode())
+            user_id = str(entry[0])
+            session[str(user_id)] = login
+            cookie = b64encode(str(entry[0]).encode() + entry[1].encode() + entry[2].encode()).decode()
+            resp.set_cookie('user_id', user_id)
+            resp.set_cookie('cookie', cookie)
         
         else:
         # create account
             user_id = uuid4()
+            session[str(user_id)] = login
             conn, cur = connect_to_db()
             cur.execute('INSERT INTO users (user_id, login, password, shelter) VALUES (%s, %s, %s, %s);', (user_id, login, password, shelter))
             commit_close(conn, cur)
             resp = make_response(render_template('account.html', value=login))
-            resp.set_cookie('user_id', str(user_id))
-            resp.set_cookie('cookie', b64encode(str(user_id).encode() + login.encode() + password.encode()).decode())
+            user_id = str(user_id)
+            cookie = b64encode(str(user_id).encode() + login.encode() + password.encode()).decode()
+            resp.set_cookie('user_id', user_id)
+            resp.set_cookie('cookie', cookie)
 
         return resp, 200
     
@@ -93,6 +107,8 @@ def handle_login():
 def handle_account():
     if request.method == "POST":
         resp = make_response(render_template('login.html'))
+        session.pop(request.cookies.get('user_id'), None)
+        print(session)
         resp.set_cookie('cookie', '', expires=0)
         resp.set_cookie('user_id', '', expires=0)
         return resp, 200

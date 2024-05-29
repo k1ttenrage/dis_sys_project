@@ -1,5 +1,7 @@
-from flask import Flask, request, abort, jsonify, render_template, make_response, redirect
+from flask import Flask, request, abort, jsonify, render_template, make_response, redirect, session
 import requests
+from flask_session import Session
+import redis
 import uuid
 
 app = Flask(__name__)
@@ -15,6 +17,7 @@ def handle_index():
 
 @app.route("/login", methods=["POST", "GET"])
 def handle_login():
+    print(session.get('key', 'Не знайдено!'))
     return redirect("http://127.0.0.1:8001/login", code=302)
 
 @app.route("/articles", methods=["POST", "GET"])
@@ -31,3 +34,4 @@ def handle_help():
 
 if __name__ == "__main__":
     app.run(port=8000)
+    Session(app)
