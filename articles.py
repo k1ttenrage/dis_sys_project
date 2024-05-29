@@ -1,11 +1,11 @@
 from flask import Flask, request, abort, render_template, make_response, redirect
+from socket import gethostbyname, gethostname
 from requests import get, RequestException
+from mariadb import connect, Error
 from subprocess import run
 from random import randint
 from uuid import uuid4
-from os import getenv
-import consul
-from mariadb import connect, Error
+from consul import Consul
 
 app = Flask(__name__)
 
@@ -13,17 +13,12 @@ run(['docker-compose', f'-fmaria.yml', 'up', '-d'])
 
 CONSUL_HOST = "127.0.0.1"
 CONSUL_PORT = 8500
-CONSUL_CLIENT = consul.Consul(host=CONSUL_HOST, port=CONSUL_PORT)
+CONSUL_CLIENT = Consul(host=CONSUL_HOST, port=CONSUL_PORT)
 
 def register_service(service_name, service_port):
     service_id = str(uuid4())
-    service_ip = getenv('SERVICE_IP', 'localhost')
-    CONSUL_CLIENT.agent.service.register(
-        service_name,
-        service_id=service_id,
-        address=service_ip,
-        port=service_port
-    )
+    service_ip = gethostbyname(gethostname())
+    CONSUL_CLIENT.agent.service.register(service_name,service_id=service_id, address=service_ip, port=service_port)
     return service_id
 
 def deregister_service(id):

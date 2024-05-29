@@ -1,27 +1,22 @@
 from flask import Flask, request, abort, render_template, make_response, redirect, session, flash
 from pika import BlockingConnection, ConnectionParameters, BasicProperties
+from socket import gethostbyname, gethostname
 from subprocess import run
+from random import randint
 from datetime import date
+from consul import Consul
 from redis import Redis
 from json import dumps
-
-from consul import Consul
-from os import getenv
 from uuid import uuid4
-from random import randint
+
 CONSUL_HOST = "127.0.0.1"
 CONSUL_PORT = 8500
 CONSUL_CLIENT = Consul(host=CONSUL_HOST, port=CONSUL_PORT)
 
 def register_service(service_name, service_port):
     service_id = str(uuid4())
-    service_ip = getenv('SERVICE_IP', 'localhost')
-    CONSUL_CLIENT.agent.service.register(
-        service_name,
-        service_id=service_id,
-        address=service_ip,
-        port=service_port
-    )
+    service_ip = gethostbyname(gethostname())
+    CONSUL_CLIENT.agent.service.register(service_name,service_id=service_id, address=service_ip, port=service_port)
     return service_id
 
 def deregister_service(id):

@@ -1,28 +1,23 @@
 from flask import Flask, render_template, request, jsonify, redirect
+from socket import gethostbyname, gethostname
 from pymongo import MongoClient
+from random import randint
 from subprocess import run
+from consul import Consul
+from uuid import uuid4
 
 app = Flask(__name__)
 
 run(['docker-compose', f'-fmongo.yml', 'up', '-d'])
 
-from consul import Consul
-from os import getenv
-from uuid import uuid4
-from random import randint
 CONSUL_HOST = "127.0.0.1"
 CONSUL_PORT = 8500
 CONSUL_CLIENT = Consul(host=CONSUL_HOST, port=CONSUL_PORT)
 
 def register_service(service_name, service_port):
     service_id = str(uuid4())
-    service_ip = getenv('SERVICE_IP', 'localhost')
-    CONSUL_CLIENT.agent.service.register(
-        service_name,
-        service_id=service_id,
-        address=service_ip,
-        port=service_port
-    )
+    service_ip = gethostbyname(gethostname())
+    CONSUL_CLIENT.agent.service.register(service_name,service_id=service_id, address=service_ip, port=service_port)
     return service_id
 
 def deregister_service(id):

@@ -1,31 +1,25 @@
 from flask import Flask, request, abort, render_template, make_response, redirect, session
+from psycopg2 import connect, OperationalError
+from socket import gethostbyname, gethostname
+from psycopg2.errors import DuplicateTable
+from psycopg2.extras import register_uuid
 from base64 import b64encode
 from subprocess import run
-from uuid import uuid4
-from time import sleep
-from psycopg2.extras import register_uuid
-from psycopg2.errors import DuplicateTable
-from psycopg2 import connect, OperationalError
-from hashlib import md5
-from redis import Redis
-
-from consul import Consul
-from os import getenv
-from uuid import uuid4
 from random import randint
+from consul import Consul
+from redis import Redis
+from hashlib import md5
+from time import sleep
+from uuid import uuid4
+
 CONSUL_HOST = "127.0.0.1"
 CONSUL_PORT = 8500
 CONSUL_CLIENT = Consul(host=CONSUL_HOST, port=CONSUL_PORT)
 
 def register_service(service_name, service_port):
     service_id = str(uuid4())
-    service_ip = getenv('SERVICE_IP', 'localhost')
-    CONSUL_CLIENT.agent.service.register(
-        service_name,
-        service_id=service_id,
-        address=service_ip,
-        port=service_port
-    )
+    service_ip = gethostbyname(gethostname())
+    CONSUL_CLIENT.agent.service.register(service_name,service_id=service_id, address=service_ip, port=service_port)
     return service_id
 
 def deregister_service(id):
@@ -108,12 +102,12 @@ def handle_login():
 
         if entry:
             # manual log in
-            resp = make_response(render_template('account.html', value=login))
             user_id = str(entry[0])
             session[str(user_id)] = login
             cookie = b64encode(str(entry[0]).encode() + entry[1].encode() + entry[2].encode()).decode()
-            resp.set_cookie('user_id', user_id)
-            resp.set_cookie('cookie', cookie)
+            resp.set_cookie('user_id', user_id, samesite='None', secure=False, domain='localhost')
+            resp.set_cookie('cookie', cookie, samesite='None', secure=False, domain='localhost')
+            resp = make_response(render_template('account.html', value=login))
         
         else:
         # create account
@@ -122,11 +116,11 @@ def handle_login():
             conn, cur = connect_to_db()
             cur.execute('INSERT INTO users (user_id, login, password, shelter) VALUES (%s, %s, %s, %s);', (user_id, login, password, shelter))
             commit_close(conn, cur)
-            resp = make_response(render_template('account.html', value=login))
             user_id = str(user_id)
             cookie = b64encode(str(user_id).encode() + login.encode() + password.encode()).decode()
-            resp.set_cookie('user_id', user_id)
-            resp.set_cookie('cookie', cookie)
+            resp.set_cookie('user_id', user_id, samesite='None', secure=False, domain='localhost')
+            resp.set_cookie('cookie', cookie, samesite='None', secure=False, domain='localhost')
+            resp = make_response(render_template('account.html', value=login))
 
         return resp, 200
     
@@ -139,11 +133,11 @@ def handle_login():
 @app.route("/account", methods=["POST", "GET"])
 def handle_account():
     if request.method == "POST":
-        resp = make_response(render_template('login.html'))
         session.pop(request.cookies.get('user_id'), None)
         print(session)
         resp.set_cookie('cookie', '', expires=0)
         resp.set_cookie('user_id', '', expires=0)
+        resp = make_response(render_template('login.html'))
         return resp, 200
     elif request.method == "GET":
         user_id = request.cookies.get('user_id')
