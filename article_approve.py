@@ -5,10 +5,9 @@ from datetime import date
 from time import sleep
 import psycopg2
 import json
+import ast
 
 app = Flask(__name__)
-
-run(['docker-compose', f'-frabbitmq.yml', 'up', '-d'])
 
 def connect_to_db():
     while True:
@@ -51,34 +50,33 @@ def handle_adopt():
 def handle_help():
     return redirect("http://127.0.0.1:8004/help", code=302)
 
-@app.route("/create_article", methods=["POST", "GET"])
-def handle_create_article():
+@app.route("/approve_article", methods=["POST", "GET"])
+def handle_approve_article():
     article = {}
     login = entry_by_user_id(request.cookies.get('user_id'))[1]
+    article['login'] = login
     if request.method == "POST":
-        article['article_name'] = request.form['article_name']
-        article['article_text'] = request.form['article_text']
-        article['article_author'] = login
-        article['article_date'] =  str(date.today())
+        action = request.form['action']
+        if action == 'approve':
+            print('Article Approved')
+        elif action == 'reject':
+            print( 'Article Rejected')
+        else:
+            print( 'Unknown action')
+        resp = make_response(render_template('article_approve.html', value=article))
+        return resp, 200
+    elif request.method == "GET":
         connection = BlockingConnection(ConnectionParameters(host='localhost'))
         channel = connection.channel()
         channel.queue_declare(queue='article_approve')
-        #channel.basic_publish(exchange='', routing_key='hello', body=article)
-        print(article)
-        channel.basic_publish(exchange='', routing_key='article_approve', body=json.dumps(article), properties=BasicProperties(delivery_mode = 2, ))
-        resp = make_response(render_template('article_generator.html', value=login))
-        return resp, 200
-    elif request.method == "GET":
-        resp = make_response(render_template('article_generator.html', value=login))
+        method_frame, _, body = channel.basic_get(queue='article_approve', auto_ack=True)
+        if method_frame: 
+            article = json.loads(body.decode('utf-8')) 
+        article['login'] = login
+        resp = make_response(render_template('article_approve.html', value=article))
         return resp, 200
     else:
         abort(400)
 
 if __name__ == "__main__":
-    app.run(port=8010)
-
-try:
-    while True:
-        pass
-except KeyboardInterrupt:
-    run(['docker-compose', f'-frabbitmq.yml', 'stop'])
+    app.run(port=8011)

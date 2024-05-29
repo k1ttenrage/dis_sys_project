@@ -1,6 +1,6 @@
 services:
   rabbitmq:
     image: rabbitmq:latest
-    container_name: 'rabbitmq'
+    container_name: article-q-rabbitmq
     ports:
         - 5672:5672

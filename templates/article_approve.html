@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>article approve</title>
+</head>
+<body>
+    <header>
+        <a href="/">home</a>
+        <a href="login">login</a>
+        <a href="adopt">adopt</a>
+        <a href="articles">articles</a>
+        <a href="help">help</a>
+        <h3>currently signed as: {{ value.login }}</h3>
+    </header>
+    <h1 align="center">article approve</h1>
+    {% if value.article_name and value.article_text and value.article_author and value.article_date %}
+    <div class="article">
+        <h3>{{ value.article_name }}</h3>
+        <p>{{ value.article_text }}</p>
+        <p><strong>Author:</strong> {{ value.article_author }}</p>
+        <p><strong>Date:</strong> {{ value.article_date }}</p>
+        <form method="post" action="/approve_article">
+            <button type="submit" name="action" value="approve">Approve</button>
+            <button type="submit" name="action" value="reject">Reject</button>
+        </form>
+    </div>
+    {% else %}
+    <p>No article to display.</p>
+    {% endif %}
+</body>
+</html>
