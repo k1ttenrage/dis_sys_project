@@ -6,6 +6,38 @@ app = Flask(__name__)
 
 run(['docker-compose', f'-fmongo.yml', 'up', '-d'])
 
+from consul import Consul
+from os import getenv
+from uuid import uuid4
+from random import randint
+CONSUL_HOST = "127.0.0.1"
+CONSUL_PORT = 8500
+CONSUL_CLIENT = Consul(host=CONSUL_HOST, port=CONSUL_PORT)
+
+def register_service(service_name, service_port):
+    service_id = str(uuid4())
+    service_ip = getenv('SERVICE_IP', 'localhost')
+    CONSUL_CLIENT.agent.service.register(
+        service_name,
+        service_id=service_id,
+        address=service_ip,
+        port=service_port
+    )
+    return service_id
+
+def deregister_service(id):
+    return CONSUL_CLIENT.agent.service.deregister(id)
+
+def get_service_address(service_name):
+    _, services = CONSUL_CLIENT.catalog.service(service_name)
+    service = randint(0, len(services) - 1)
+    if services:
+        address = services[service]['ServiceAddress']
+        port = services[service]['ServicePort']
+        return f"http://{address}:{port}"
+    else:
+        raise Exception(f"Service '{service_name}' not found in Consul.")
+
 client = MongoClient('mongodb://localhost:27017/')
 db = client['pets']
 cats_collection = db['cats']
@@ -33,24 +65,22 @@ def fetchrecords():
 
 @app.route("/", methods=["POST", "GET"])
 def handle_index():
-    return redirect("http://127.0.0.1:8000/", code=302)
+    return redirect(f"{get_service_address('gateway')}/", code=302)
 
 @app.route("/login", methods=["POST", "GET"])
 def handle_login():
-    return redirect("http://127.0.0.1:8001/login", code=302)
+    return redirect(f"{get_service_address('login')}/login", code=302)
 
 @app.route("/articles", methods=["POST", "GET"])
 def handle_articles():
-    return redirect("http://127.0.0.1:8002/articles", code=302)
+    return redirect(f"{get_service_address('articles')}/articles", code=302)
 
-@app.route("/help", methods=["POST", "GET"])
-def handle_help():
-    return redirect("http://127.0.0.1:8004/help", code=302)
-
+service_id = register_service('adopt', 8003)
 app.run(port=8003)
 
 try:
     while True:
         pass
 except KeyboardInterrupt:
+    deregister_service(service_id)
     run(['docker-compose', f'-fmongo.yml', 'stop'])

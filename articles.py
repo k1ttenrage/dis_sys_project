@@ -1,11 +1,43 @@
 from flask import Flask, request, abort, render_template, make_response, redirect
 from requests import get, RequestException
 from subprocess import run
+from random import randint
+from uuid import uuid4
+from os import getenv
+import consul
 from mariadb import connect, Error
 
 app = Flask(__name__)
 
 run(['docker-compose', f'-fmaria.yml', 'up', '-d'])
+
+CONSUL_HOST = "127.0.0.1"
+CONSUL_PORT = 8500
+CONSUL_CLIENT = consul.Consul(host=CONSUL_HOST, port=CONSUL_PORT)
+
+def register_service(service_name, service_port):
+    service_id = str(uuid4())
+    service_ip = getenv('SERVICE_IP', 'localhost')
+    CONSUL_CLIENT.agent.service.register(
+        service_name,
+        service_id=service_id,
+        address=service_ip,
+        port=service_port
+    )
+    return service_id
+
+def deregister_service(id):
+    return CONSUL_CLIENT.agent.service.deregister(id)
+
+def get_service_address(service_name):
+    _, services = CONSUL_CLIENT.catalog.service(service_name)
+    service = randint(0, len(services) - 1)
+    if services:
+        address = services[service]['ServiceAddress']
+        port = services[service]['ServicePort']
+        return f"http://{address}:{port}"
+    else:
+        raise Exception(f"Service '{service_name}' not found in Consul.")
 
 def get_connection():
     try:
@@ -16,11 +48,11 @@ def get_connection():
 
 @app.route("/", methods=["POST", "GET"])
 def handle_index():
-    return redirect("http://127.0.0.1:8000/", code=302)
+    return redirect(f"{get_service_address('gateway')}/", code=302)
 
 @app.route("/login", methods=["POST", "GET"])
 def handle_login():
-    return redirect("http://127.0.0.1:8001/login", code=302)
+    return redirect(f"{get_service_address('login')}/login", code=302)
 
 @app.route("/articles", methods=["POST", "GET"])
 def handle_articles():
@@ -45,28 +77,25 @@ def handle_articles():
 
 @app.route("/adopt", methods=["POST", "GET"])
 def handle_adopt():
-    return redirect("http://127.0.0.1:8003/adopt", code=302)
-
-@app.route("/help", methods=["POST", "GET"])
-def handle_help():
-    return redirect("http://127.0.0.1:8004/help", code=302)
+    return redirect(f"{get_service_address('adopt')}/adopt", code=302)
 
 @app.route("/create_article", methods=["POST", "GET"])
 def handle_generator():
     try:
-        response = get("http://127.0.0.1:8010/create_article")
+        response = get(f"{get_service_address('articles_generator')}/create_article")
         response.raise_for_status()
-        return redirect("http://127.0.0.1:8010/create_article", code=302)
+        return redirect(f"{get_service_address('articles_generator')}/create_article", code=302)
     except RequestException as e:
         print(f"Primary server not responding: {e}")
-    return redirect("http://127.0.0.1:8012/create_article", code=302)
 
+    return redirect(f"{get_service_address('articles_generator_backup')}/create_article", code=302)
 
-if __name__ == "__main__":
-    app.run(port=8002)
+service_id = register_service('articles', 8002)
+app.run(port=8002)
 
 try:
     while True:
         pass
 except KeyboardInterrupt:
+    deregister_service(service_id)
     run(['docker-compose', f'-fmaria.yml', 'stop'])

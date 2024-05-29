@@ -1,9 +1,41 @@
-from flask import Flask, request, abort, render_template, make_response, redirect, session
+from flask import Flask, request, abort, render_template, make_response, redirect, session, flash
 from pika import BlockingConnection, ConnectionParameters, BasicProperties
 from subprocess import run
 from datetime import date
 from redis import Redis
 from json import dumps
+
+from consul import Consul
+from os import getenv
+from uuid import uuid4
+from random import randint
+CONSUL_HOST = "127.0.0.1"
+CONSUL_PORT = 8500
+CONSUL_CLIENT = Consul(host=CONSUL_HOST, port=CONSUL_PORT)
+
+def register_service(service_name, service_port):
+    service_id = str(uuid4())
+    service_ip = getenv('SERVICE_IP', 'localhost')
+    CONSUL_CLIENT.agent.service.register(
+        service_name,
+        service_id=service_id,
+        address=service_ip,
+        port=service_port
+    )
+    return service_id
+
+def deregister_service(id):
+    return CONSUL_CLIENT.agent.service.deregister(id)
+
+def get_service_address(service_name):
+    _, services = CONSUL_CLIENT.catalog.service(service_name)
+    service = randint(0, len(services) - 1)
+    if services:
+        address = services[service]['ServiceAddress']
+        port = services[service]['ServicePort']
+        return f"http://{address}:{port}"
+    else:
+        raise Exception(f"Service '{service_name}' not found in Consul.")
 
 app = Flask(__name__)
 
@@ -18,23 +50,19 @@ run(['docker-compose', f'-frabbitmq.yml', 'up', '-d'])
 
 @app.route("/", methods=["POST", "GET"])
 def handle_index():
-    return redirect("http://127.0.0.1:8000/", code=302)
+    return redirect(f"{get_service_address('gateway')}/", code=302)
 
 @app.route("/login", methods=["POST", "GET"])
 def handle_login():
-    return redirect("http://127.0.0.1:8001/login", code=302)
+    return redirect(f"{get_service_address('login')}/login", code=302)
 
 @app.route("/articles", methods=["POST", "GET"])
 def handle_articles():
-    return redirect("http://127.0.0.1:8002/articles", code=302)
+    return redirect(f"{get_service_address('articles')}/articles", code=302)
 
 @app.route("/adopt", methods=["POST", "GET"])
 def handle_adopt():
-    return redirect("http://127.0.0.1:8003/adopt", code=302)
-
-@app.route("/help", methods=["POST", "GET"])
-def handle_help():
-    return redirect("http://127.0.0.1:8004/help", code=302)
+    return redirect(f"{get_service_address('adopt')}/adopt", code=302)
 
 @app.route("/create_article", methods=["POST", "GET"])
 def handle_create_article():
@@ -50,19 +78,21 @@ def handle_create_article():
         channel = connection.channel()
         channel.queue_declare(queue='article_approve')
         channel.basic_publish(exchange='', routing_key='article_approve', body=dumps(article), properties=BasicProperties(delivery_mode = 2, ))
+        flash('Стаття відправлена на огляд')
         resp = make_response(render_template('article_generator.html', value=login))
-        return resp, 200
+        return redirect(f"{get_service_address('articles')}/articles", code=302)
     elif request.method == "GET":
         resp = make_response(render_template('article_generator.html', value=login))
         return resp, 200
     else:
         abort(400)
 
-if __name__ == "__main__":
-    app.run(port=8012)
+service_id = register_service('articles_generator_backup', 8012)
+app.run(port=8012)
 
 try:
-    while True:
+    while True: 
         pass
 except KeyboardInterrupt:
-    run(['docker-compose', f'-frabbitmq.yml', 'stop'])
+    deregister_service(service_id)
+    exit()
