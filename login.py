@@ -18,7 +18,7 @@ CONSUL_CLIENT = Consul(host=CONSUL_HOST, port=CONSUL_PORT)
 
 def register_service(service_name, service_port):
     service_id = str(uuid4())
-    service_ip = gethostbyname(gethostname())
+    service_ip = CONSUL_HOST
     CONSUL_CLIENT.agent.service.register(service_name,service_id=service_id, address=service_ip, port=service_port)
     return service_id
 
@@ -105,9 +105,9 @@ def handle_login():
             user_id = str(entry[0])
             session[str(user_id)] = login
             cookie = b64encode(str(entry[0]).encode() + entry[1].encode() + entry[2].encode()).decode()
-            resp.set_cookie('user_id', user_id, samesite='None', secure=False, domain='localhost')
-            resp.set_cookie('cookie', cookie, samesite='None', secure=False, domain='localhost')
             resp = make_response(render_template('account.html', value=login))
+            resp.set_cookie('user_id', user_id)
+            resp.set_cookie('cookie', cookie)
         
         else:
         # create account
@@ -118,9 +118,9 @@ def handle_login():
             commit_close(conn, cur)
             user_id = str(user_id)
             cookie = b64encode(str(user_id).encode() + login.encode() + password.encode()).decode()
-            resp.set_cookie('user_id', user_id, samesite='None', secure=False, domain='localhost')
-            resp.set_cookie('cookie', cookie, samesite='None', secure=False, domain='localhost')
             resp = make_response(render_template('account.html', value=login))
+            resp.set_cookie('user_id', user_id)
+            resp.set_cookie('cookie', cookie)
 
         return resp, 200
     
@@ -133,11 +133,10 @@ def handle_login():
 @app.route("/account", methods=["POST", "GET"])
 def handle_account():
     if request.method == "POST":
-        session.pop(request.cookies.get('user_id'), None)
-        print(session)
+        session.clear()
+        resp = make_response(render_template('login.html'))
         resp.set_cookie('cookie', '', expires=0)
         resp.set_cookie('user_id', '', expires=0)
-        resp = make_response(render_template('login.html'))
         return resp, 200
     elif request.method == "GET":
         user_id = request.cookies.get('user_id')

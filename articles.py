@@ -1,4 +1,4 @@
-from flask import Flask, request, abort, render_template, make_response, redirect
+from flask import Flask, request, abort, render_template, make_response, redirect, session
 from socket import gethostbyname, gethostname
 from requests import get, RequestException
 from mariadb import connect, Error
@@ -17,7 +17,7 @@ CONSUL_CLIENT = Consul(host=CONSUL_HOST, port=CONSUL_PORT)
 
 def register_service(service_name, service_port):
     service_id = str(uuid4())
-    service_ip = gethostbyname(gethostname())
+    service_ip = CONSUL_HOST
     CONSUL_CLIENT.agent.service.register(service_name,service_id=service_id, address=service_ip, port=service_port)
     return service_id
 
@@ -56,11 +56,7 @@ def handle_articles():
     cur.execute("SELECT * FROM articles_tbl")
     all = cur.fetchall()
     for article in all:
-        data.append({'article_name':article[1],
-                     'article_text': article[2], 
-                     'article_author':article[3], 
-                     'article_date': article[4]})
-    print(len(all))
+        data.append({'article_name':article[1],'article_text': article[2], 'article_author':article[3], 'article_date': article[4]})
     if request.method == "POST":
         resp = make_response(render_template('articles.html', articles=data))
         return resp, 200

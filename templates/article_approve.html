@@ -19,7 +19,7 @@
         <a href="login">login</a>
         <a href="adopt">adopt</a>
         <a href="articles">articles</a>
-        <h3>currently signed as: {{ value.login }}</h3>
+        <h3 class="login_status">currently signed as: {{ value.login }}</h3>
     </header>
     <h1 align="center">article approve</h1>
     {% if value.article_name and value.article_text and value.article_author and value.article_date and value.login%}

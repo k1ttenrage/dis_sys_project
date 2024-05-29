@@ -84,7 +84,6 @@ def handle_approve_article(article=article):
     if request.method == "POST":
         action = request.form['action']
         if action == 'approve':
-            print(article_id, article_name, article_text, article_author, article_date, sep='\n')
             cur.execute("INSERT INTO articles_tbl (article_id,article_name,article_text,article_author, article_date) VALUES (?, ?, ?, ?, ?)", (article_id,article_name,article_text,article_author, article_date))
             conn.commit()
             cur.close()
@@ -103,8 +102,6 @@ def handle_approve_article(article=article):
     else:
         abort(400)
 
-
-
 service_id = register_service('articles_approve', 8011)
 app.run(port=8011)
 
@@ -114,6 +111,3 @@ try:
 except KeyboardInterrupt:
     deregister_service(service_id)
     exit()
-
-deregister_service(service_id)
-exit()
