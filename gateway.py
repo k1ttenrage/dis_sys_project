@@ -1,10 +1,10 @@
-from flask import Flask, request, abort, jsonify, render_template, make_response, redirect, session
-import requests
+from flask import Flask, request, abort, render_template, redirect, session
 from flask_session import Session
-import redis
-import uuid
+from subprocess import run
 
 app = Flask(__name__)
+
+run(['docker-compose', f'-fredis.yml', 'up', '-d'])
 
 @app.route("/", methods=["POST", "GET"])
 def handle_index():
@@ -17,7 +17,6 @@ def handle_index():
 
 @app.route("/login", methods=["POST", "GET"])
 def handle_login():
-    print(session.get('key', 'Не знайдено!'))
     return redirect("http://127.0.0.1:8001/login", code=302)
 
 @app.route("/articles", methods=["POST", "GET"])
@@ -35,3 +34,9 @@ def handle_help():
 if __name__ == "__main__":
     app.run(port=8000)
     Session(app)
+
+try:
+    while True:
+        pass
+except KeyboardInterrupt:
+    run(['docker-compose', f'-fredis.yml', 'stop'])

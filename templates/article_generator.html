@@ -24,5 +24,14 @@
     {% else %}
     <p>currently no signed in. try to log out and log in</p>
     {% endif %}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    alert('{{ messages[0] }}');
+                });
+            </script>
+        {% endif %}
+    {% endwith %}
 </body>
 </html>

@@ -3,12 +3,13 @@ from base64 import b64encode
 from subprocess import run
 from uuid import uuid4
 from time import sleep
-import psycopg2.extras
-import psycopg2
-import hashlib
-import redis
+from psycopg2.extras import register_uuid
+from psycopg2.errors import DuplicateTable
+from psycopg2 import connect, OperationalError
+from hashlib import md5
+from redis import Redis
 
-psycopg2.extras.register_uuid()
+register_uuid()
 
 app = Flask(__name__)
 
@@ -17,17 +18,17 @@ app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'session:'
-app.config['SESSION_REDIS'] = redis.Redis(host='localhost', port=6379)
+app.config['SESSION_REDIS'] = Redis(host='localhost', port=6379)
 
 run(['docker-compose', f'-fpostgres.yml', 'up', '-d'])
 
 def connect_to_db():
     while True:
         try:
-            conn = psycopg2.connect("host=localhost dbname=user_db user=kittenrage password=123")
+            conn = connect("host=localhost dbname=user_db user=kittenrage password=123")
             cur = conn.cursor()
             return conn, cur
-        except psycopg2.OperationalError:
+        except OperationalError:
             sleep(2)
 
 def commit_close(conn, cur):
@@ -46,7 +47,7 @@ try:
     conn, cur = connect_to_db()
     cur.execute("CREATE TABLE users (user_id uuid PRIMARY KEY, login varchar, password varchar, shelter int);")
     commit_close(conn, cur)
-except psycopg2.errors.DuplicateTable:
+except DuplicateTable:
     cur.close()
     pass
 
@@ -65,7 +66,7 @@ def handle_login():
 
     if request.method == "POST":
         login = request.form.get('login')
-        password = hashlib.md5(request.form.get('password').encode()).hexdigest()
+        password = md5(request.form.get('password').encode()).hexdigest()
         shelter = int(request.form.get('shelter')) #add dropdown list to html
 
         conn, cur = connect_to_db()

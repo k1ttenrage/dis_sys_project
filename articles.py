@@ -1,8 +1,7 @@
-from flask import Flask, request, abort, jsonify, render_template, make_response, redirect
+from flask import Flask, request, abort, render_template, make_response, redirect
+from requests import get, RequestException
 from subprocess import run
-import requests
-import uuid
-import mariadb
+from mariadb import connect, Error
 
 app = Flask(__name__)
 
@@ -10,14 +9,8 @@ run(['docker-compose', f'-fmaria.yml', 'up', '-d'])
 
 def get_connection():
     try:
-        conn = mariadb.connect(
-            user="root",
-            password="123",
-            host="127.0.0.1",
-            port=3306,
-            database="articles"
-        )
-    except mariadb.Error as e:
+        conn = connect(user="root", password="123", host="127.0.0.1", port=3306, database="articles")
+    except Error as e:
         print(f"Error connecting to MariaDB Platform: {e}")
     return conn
 
@@ -40,7 +33,7 @@ def handle_articles():
                      'article_text': article[2], 
                      'article_author':article[3], 
                      'article_date': article[4]})
-    #print(all)
+    print(len(all))
     if request.method == "POST":
         resp = make_response(render_template('articles.html', articles=data))
         return resp, 200
@@ -60,7 +53,14 @@ def handle_help():
 
 @app.route("/create_article", methods=["POST", "GET"])
 def handle_generator():
-    return redirect("http://127.0.0.1:8010/create_article", code=302)
+    try:
+        response = get("http://127.0.0.1:8010/create_article")
+        response.raise_for_status()
+        return redirect("http://127.0.0.1:8010/create_article", code=302)
+    except RequestException as e:
+        print(f"Primary server not responding: {e}")
+    return redirect("http://127.0.0.1:8012/create_article", code=302)
+
 
 if __name__ == "__main__":
     app.run(port=8002)

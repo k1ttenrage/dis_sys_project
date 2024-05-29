@@ -4,6 +4,14 @@
     <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <title>article approve</title>
+    <script type="text/javascript">
+        function handleBeforeUnload(event) {event.returnValue = 'Are you sure you want to leave? All data will be lost.';}
+        window.addEventListener('load', function () {
+            window.addEventListener('beforeunload', handleBeforeUnload);
+            var buttons = document.querySelectorAll('button');
+            buttons.forEach(function (button) {button.addEventListener('click', function () {window.removeEventListener('beforeunload', handleBeforeUnload);});});
+        });
+    </script>
 </head>
 <body>
     <header>
@@ -15,7 +23,7 @@
         <h3>currently signed as: {{ value.login }}</h3>
     </header>
     <h1 align="center">article approve</h1>
-    {% if value.article_name and value.article_text and value.article_author and value.article_date %}
+    {% if value.article_name and value.article_text and value.article_author and value.article_date and value.login%}
     <div class="article">
         <h3>{{ value.article_name }}</h3>
         <p>{{ value.article_text }}</p>
@@ -27,7 +35,7 @@
         </form>
     </div>
     {% else %}
-    <p>No article to display.</p>
+    <p>No article to display. or not signed in</p>
     {% endif %}
 </body>
 </html>

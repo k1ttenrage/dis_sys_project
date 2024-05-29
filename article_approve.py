@@ -1,34 +1,24 @@
-from flask import Flask, request, abort, jsonify, render_template, make_response, redirect
-from pika import BlockingConnection, ConnectionParameters, BasicProperties
-from subprocess import run
-from datetime import date
-from time import sleep
-import psycopg2
-import json
-import ast
+from flask import Flask, request, abort, render_template, make_response, redirect, session, url_for
+from pika import BlockingConnection, ConnectionParameters
+from mariadb import connect, Error
+from uuid import uuid4
+from redis import Redis
+from json import loads
 
 app = Flask(__name__)
 
-def connect_to_db():
-    while True:
-        try:
-            conn = psycopg2.connect("host=localhost dbname=user_db user=kittenrage password=123")
-            cur = conn.cursor()
-            return conn, cur
-        except psycopg2.OperationalError:
-            sleep(2)
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'session:'
+app.config['SESSION_REDIS'] = Redis(host='localhost', port=6379)
 
-def commit_close(conn, cur):
-    conn.commit() 
-    cur.close()
-    conn.close()
-
-def entry_by_user_id(user_id):
-    conn, cur = connect_to_db()
-    cur.execute('SELECT * FROM users WHERE user_id = %s;', (str(user_id),))
-    entry = cur.fetchone()
-    commit_close(conn, cur)
-    return entry
+try:
+    conn = connect(user="root", password="123",host="127.0.0.1", port=3306, database="articles")
+    cur = conn.cursor()
+except Error as e:
+    print(f"Error connecting to MariaDB Platform: {e}")
 
 @app.route("/", methods=["POST", "GET"])
 def handle_index():
@@ -50,33 +40,47 @@ def handle_adopt():
 def handle_help():
     return redirect("http://127.0.0.1:8004/help", code=302)
 
+article = {}
+
 @app.route("/approve_article", methods=["POST", "GET"])
-def handle_approve_article():
-    article = {}
-    login = entry_by_user_id(request.cookies.get('user_id'))[1]
-    article['login'] = login
+def handle_approve_article(article=article):
+    global article_id, article_name, article_text, article_author, article_date
+    login = session.get(request.cookies.get('user_id'), None)
+    connection = BlockingConnection(ConnectionParameters(host='localhost'))
+    channel = connection.channel()
+    channel.queue_declare(queue='article_approve')
+    method_frame, _, body = channel.basic_get(queue='article_approve', auto_ack=True)
+    if method_frame: 
+        article = loads(body.decode('utf-8')) 
+        article_id = str(uuid4())
+        article_name = article['article_name']
+        article_text =  article['article_text']
+        article_author = article['article_author']
+        article_date = article['article_date']
+        article['login'] = login
+
     if request.method == "POST":
         action = request.form['action']
         if action == 'approve':
-            print('Article Approved')
+            print(article_id, article_name, article_text, article_author, article_date, sep='\n')
+            cur.execute("INSERT INTO articles_tbl (article_id,article_name,article_text,article_author, article_date) VALUES (?, ?, ?, ?, ?)", (article_id,article_name,article_text,article_author, article_date))
+            conn.commit()
+            cur.close()
         elif action == 'reject':
-            print( 'Article Rejected')
+            article['login'] = login
+            resp = make_response(render_template('article_approve.html', value=article))
+            return resp, 200
         else:
-            print( 'Unknown action')
-        resp = make_response(render_template('article_approve.html', value=article))
-        return resp, 200
+            print('Unknown action')
+        return redirect("http://127.0.0.1:8002/articles", code=302)
+    
     elif request.method == "GET":
-        connection = BlockingConnection(ConnectionParameters(host='localhost'))
-        channel = connection.channel()
-        channel.queue_declare(queue='article_approve')
-        method_frame, _, body = channel.basic_get(queue='article_approve', auto_ack=True)
-        if method_frame: 
-            article = json.loads(body.decode('utf-8')) 
         article['login'] = login
         resp = make_response(render_template('article_approve.html', value=article))
         return resp, 200
     else:
         abort(400)
+
 
 if __name__ == "__main__":
     app.run(port=8011)
