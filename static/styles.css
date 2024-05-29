@@ -27,6 +27,17 @@ a{
   color: rgb(196, 2, 2);
 }
 
+.login_status{
+  text-align: right;
+  color: rgb(196, 2, 2);
+  font-size: 14px;
+  margin-top: -1%;
+}
+
+.login_status h3{
+  font-size: 14px;
+}
+
 h1, h2, h3{
   font-family: Comic Sans MS,sans-serif;
 }

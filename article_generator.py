@@ -62,8 +62,7 @@ def handle_adopt():
 @app.route("/create_article", methods=["POST", "GET"])
 def handle_create_article():
     article = {}
-    login = session.get(request.cookies.get('user_id'), 'Не знайдено!')
-    if login == 'Не знайдено!': login = None
+    login = session.get(request.cookies.get('user_id'), None)
     if request.method == "POST":
         article['article_name'] = request.form['article_name']
         article['article_text'] = request.form['article_text']
@@ -81,6 +80,10 @@ def handle_create_article():
         return resp, 200
     else:
         abort(400)
+
+@app.route("/approve_article", methods=["POST", "GET"])
+def handle_approve():
+    return redirect(f"{get_service_address('articles_approve')}/approve_article", code=302)
 
 service_id = register_service('articles_generator', 8010)
 app.run(port=8010)
