@@ -1,13 +1,12 @@
 from flask import Flask, request, abort, render_template, make_response, redirect, session, flash
 from pika import BlockingConnection, ConnectionParameters, BasicProperties
-from socket import gethostbyname, gethostname
 from subprocess import run
 from random import randint
 from datetime import date
 from consul import Consul
 from redis import Redis
-from json import dumps
 from uuid import uuid4
+from json import dumps
 
 CONSUL_HOST = "127.0.0.1"
 CONSUL_PORT = 8500
