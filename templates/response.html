@@ -1,4 +1,4 @@
-{% for row in productlist %} 
+{% for row in petslist %} 
 <div class="col-sm-4 col-lg-3 col-md-3">
     <div style="border:1px solid #ccc; border-radius:5px; padding:16px; margin-bottom:16px; height:300px;">
       <img src="/static/images/{{row.image}}" alt="" class="img-responsive">
@@ -8,6 +8,11 @@
           <a>{{row.breed}}</a>
           <a>{{row.sex}}</a>
           <a>{{row.color}}</a>
+          {% if row.image %}
+            <img style="width: 150px; height: 220px" src="data:image/jpeg;base64,{{ row.image }}">
+          {% else %}
+            <p>No image available</p>
+          {% endif %}
         </strong>
       </p>
       <h4 style="text-align:center;" class="text-danger">{{row.price}}</h4>

@@ -15,7 +15,7 @@ CONSUL_CLIENT = Consul(host=CONSUL_HOST, port=CONSUL_PORT)
 
 def register_service(service_name, service_port):
     service_id = str(uuid4())
-    service_ip = gethostbyname(gethostname())
+    service_ip = CONSUL_HOST
     CONSUL_CLIENT.agent.service.register(service_name,service_id=service_id, address=service_ip, port=service_port)
     return service_id
 
@@ -62,8 +62,7 @@ def handle_adopt():
 @app.route("/create_article", methods=["POST", "GET"])
 def handle_create_article():
     article = {}
-    login = session.get(request.cookies.get('user_id'), 'Не знайдено!')
-    if login == 'Не знайдено!': login = None
+    login = session.get(request.cookies.get('user_id'), None)
     if request.method == "POST":
         article['article_name'] = request.form['article_name']
         article['article_text'] = request.form['article_text']
@@ -81,6 +80,10 @@ def handle_create_article():
         return resp, 200
     else:
         abort(400)
+
+@app.route("/approve_article", methods=["POST", "GET"])
+def handle_approve():
+    return redirect(f"{get_service_address('articles_approve')}/approve_article", code=302)
 
 service_id = register_service('articles_generator_backup', 8012)
 app.run(port=8012)

@@ -73,13 +73,14 @@ def handle_adopt():
 @app.route("/create_article", methods=["POST", "GET"])
 def handle_generator():
     try:
-        response = get(f"{get_service_address('articles_generator')}/create_article")
-        response.raise_for_status()
+        # response = get(f"{get_service_address('articles_generator')}/create_article")
+        # response.raise_for_status()
         return redirect(f"{get_service_address('articles_generator')}/create_article", code=302)
-    except RequestException as e:
+    except:
+        return redirect(f"{get_service_address('articles_generator_backup')}/create_article", code=302)
         print(f"Primary server not responding: {e}")
 
-    return redirect(f"{get_service_address('articles_generator_backup')}/create_article", code=302)
+    
 
 service_id = register_service('articles', 8002)
 app.run(port=8002)

@@ -70,8 +70,10 @@ def handle_approve_article(article=article):
     login = session.get(request.cookies.get('user_id'), None)
     connection = BlockingConnection(ConnectionParameters(host='localhost'))
     channel = connection.channel()
-    channel.queue_declare(queue='article_approve')
+    queue = channel.queue_declare(queue='article_approve')
+    print(queue.method.message_count)
     method_frame, _, body = channel.basic_get(queue='article_approve', auto_ack=True)
+    print(queue.method.message_count)
     if method_frame: 
         article = loads(body.decode('utf-8')) 
         article_id = str(uuid4())
