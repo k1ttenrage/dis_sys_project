@@ -1,18 +1,17 @@
 from flask import Flask, render_template, request, jsonify, redirect
 from jinja2 import Environment, FileSystemLoader
-from socket import gethostbyname, gethostname
+from base64 import b64encode as b64e
 from pymongo import MongoClient
 from random import randint
 from subprocess import run
+from gridfs import GridFS
 from consul import Consul
 from uuid import uuid4
-import gridfs
-import base64
 
 app = Flask(__name__)
 
 def b64encode(value):
-    return base64.b64encode(value).decode('utf-8')
+    return b64e(value).decode('utf-8')
 
 env = Environment(loader=FileSystemLoader('templates'))
 env.filters['b64encode'] = b64encode
@@ -54,28 +53,11 @@ connection_string = 'mongodb://127.0.0.1:27017,127.0.0.1:27018,127.0.0.1:27019/?
 client = MongoClient(connection_string)
 pets_db = client['pets']
 cats_collection = pets_db['cats']
-fs = gridfs.GridFS(pets_db)
+fs = GridFS(pets_db)
 
 @app.route('/adopt')
 def index():
     return render_template('adopt.html')
-
-# @app.route("/fetchrecords", methods=["POST", "GET"])
-# def fetchrecords():
-#     if request.method == 'POST':
-#         query = request.form['action']
-#         minimum_age = float(request.form['minimum_age'])
-#         maximum_age = float(request.form['maximum_age'])
-#         pet_color = request.form['pet_color']
-#         pet_sex = request.form['pet_sex']
-#         if query == '':
-#             petslist = list(cats_collection.find())
-#         else:
-#             query = [{"$match": {"age": {"$gte": minimum_age, "$lt": maximum_age}}}]
-#             if pet_color != 'all': query[0]['$match']['color'] = pet_color
-#             if pet_sex != 'all': query[0]['$match']['sex'] = pet_sex
-#             petslist = list(cats_collection.aggregate(query))
-#     return jsonify({'htmlresponse': render_template('response.html', petslist=petslist)})
 
 @app.route("/fetchrecords", methods=["POST", "GET"])
 def fetchrecords():
@@ -97,13 +79,12 @@ def fetchrecords():
         for pet in petslist:
             pet_id = pet['_id']
             try:
-                pet['image'] = base64.b64encode(get_image(pet_id)).decode('utf-8')
+                pet['image'] = b64e(get_image(pet_id)).decode('utf-8')
             except:
                 pass
 
     response = env.get_template('response.html')
     return jsonify({'htmlresponse': response.render(petslist=petslist)})
-    # return jsonify({'htmlresponse': render_template('response.html', petslist=petslist)})
 
 @app.route("/", methods=["POST", "GET"])
 def handle_index():

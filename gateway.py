@@ -1,5 +1,4 @@
-from flask import Flask, request, abort, render_template, redirect, session
-from socket import gethostbyname, gethostname
+from flask import Flask, request, abort, render_template, redirect
 from subprocess import run
 from random import randint
 from consul import Consul
@@ -11,7 +10,7 @@ CONSUL_CLIENT = Consul(host=CONSUL_HOST, port=CONSUL_PORT)
 
 def register_service(service_name, service_port):
     service_id = str(uuid4())
-    service_ip = gethostbyname(gethostname())
+    service_ip = CONSUL_HOST
     CONSUL_CLIENT.agent.service.register(service_name,service_id=service_id, address=service_ip, port=service_port)
     return service_id
 

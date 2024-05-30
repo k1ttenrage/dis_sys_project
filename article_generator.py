@@ -1,6 +1,5 @@
 from flask import Flask, request, abort, render_template, make_response, redirect, session, flash
 from pika import BlockingConnection, ConnectionParameters, BasicProperties
-from socket import gethostbyname, gethostname
 from subprocess import run
 from random import randint
 from datetime import date

@@ -1,11 +1,9 @@
 from flask import Flask, request, abort, render_template, make_response, redirect, session
-from socket import gethostbyname, gethostname
-from requests import get, RequestException
 from mariadb import connect, Error
 from subprocess import run
 from random import randint
-from uuid import uuid4
 from consul import Consul
+from uuid import uuid4
 
 app = Flask(__name__)
 
@@ -73,12 +71,9 @@ def handle_adopt():
 @app.route("/create_article", methods=["POST", "GET"])
 def handle_generator():
     try:
-        # response = get(f"{get_service_address('articles_generator')}/create_article")
-        # response.raise_for_status()
         return redirect(f"{get_service_address('articles_generator')}/create_article", code=302)
     except:
         return redirect(f"{get_service_address('articles_generator_backup')}/create_article", code=302)
-        print(f"Primary server not responding: {e}")
 
     
 

@@ -1,6 +1,5 @@
 from flask import Flask, request, abort, render_template, make_response, redirect, session
 from psycopg2 import connect, OperationalError
-from socket import gethostbyname, gethostname
 from psycopg2.errors import DuplicateTable
 from psycopg2.extras import register_uuid
 from base64 import b64encode
@@ -93,7 +92,7 @@ def handle_login():
     if request.method == "POST":
         login = request.form.get('login')
         password = md5(request.form.get('password').encode()).hexdigest()
-        shelter = int(request.form.get('shelter')) #add dropdown list to html
+        shelter = int(request.form.get('shelter'))
 
         conn, cur = connect_to_db()
         cur.execute('SELECT * FROM users WHERE login = %s AND password = %s;', (login, password))
